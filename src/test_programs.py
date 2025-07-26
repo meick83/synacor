@@ -1,5 +1,6 @@
 import unittest
 import itertools
+import struct
 from machine import *
 
 class ProgramTest(unittest.TestCase):
@@ -13,11 +14,10 @@ class ProgramTest(unittest.TestCase):
         self.assertEqual(m.term_out, "e")
 
     def test_bin(self):
-        word_program = []
+        word_program = None
         with open("challenge.bin", "rb") as f:
             byte_program = f.read()
-            for lb, hb in itertools.batched(byte_program, n=2):
-                word_program.append((hb << 8) + lb)
+            word_program = tuple(map(lambda x:x[0], struct.iter_unpack("<H", byte_program)))
         m = Machine()
         m.load(word_program)
         m.run()

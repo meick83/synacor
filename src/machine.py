@@ -9,6 +9,9 @@ class Machine:
         self.registers = [0]*8
         self.memory = [0]*Machine.MEM_SIZE
         self.dispatch = [None]*22
+        self.dispatch[ 6] = self.__jmp
+        self.dispatch[ 7] = self.__jt
+        self.dispatch[ 8] = self.__jf
         self.dispatch[ 9] = self.__add
         self.dispatch[19] = self.__out
         self.dispatch[21] = self.__noop
@@ -24,12 +27,35 @@ class Machine:
             if opcode == 0:
                 return
             instr = self.dispatch[opcode]
+            if instr is None:
+                raise Exception(f"unknown opcode {opcode}")
             self.pc += instr()
 
     def __reset(self):
         self.stack = []
         self.pc = 0
         self.term_out = ""
+
+    def __jmp(self):
+        a = self.__get_arg(1)
+        return (a - self.pc)
+
+    def __jt(self):
+        a = self.__get_arg(1)
+        b = self.__get_arg(2)
+        if a != 0:
+            return (b - self.pc)
+        else:
+            return 3
+
+    def __jf(self):
+        a = self.__get_arg(1)
+        b = self.__get_arg(2)
+        if a == 0:
+            return (b - self.pc)
+        else:
+            return 3
+
 
     def __add(self):
         b = self.__get_arg(2)

@@ -3,6 +3,32 @@ from machine import *
 
 class InstructionTest(unittest.TestCase):
 
+    def test_jmp(self):
+        m = Machine()
+        m.load([6,10])
+        m.run()
+        self.assertEqual(m.pc, 10)
+
+    def test_jt(self):
+        m = Machine()
+        m.load([7,0,10])
+        m.run()
+        self.assertEqual(m.pc, 3)
+        m = Machine()
+        m.load([7,1,10])
+        m.run()
+        self.assertEqual(m.pc, 10)
+
+    def test_jf(self):
+        m = Machine()
+        m.load([8,1,10])
+        m.run()
+        self.assertEqual(m.pc, 3)
+        m = Machine()
+        m.load([8,0,10])
+        m.run()
+        self.assertEqual(m.pc, 10)
+
     def test_add(self):
         m = Machine()
         m.load([9,32768,8,4,0])

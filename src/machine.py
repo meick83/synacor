@@ -9,6 +9,8 @@ class Machine:
         self.registers = [0]*8
         self.memory = [0]*Machine.MEM_SIZE
         self.dispatch = [None]*22
+        self.dispatch[ 1] = self.__set
+        self.dispatch[ 4] = self.__eq
         self.dispatch[ 6] = self.__jmp
         self.dispatch[ 7] = self.__jt
         self.dispatch[ 8] = self.__jf
@@ -35,6 +37,20 @@ class Machine:
         self.stack = []
         self.pc = 0
         self.term_out = ""
+
+    def __set(self):
+        b = self.__get_arg(2)
+        self.__store_arg(1, b)
+        return 3
+
+    def __eq(self):
+        b = self.__get_arg(2)
+        c = self.__get_arg(3)
+        if b == c:
+            self.__store_arg(1, 1)
+        else:
+            self.__store_arg(1, 0)
+        return 4
 
     def __jmp(self):
         a = self.__get_arg(1)

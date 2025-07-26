@@ -6,8 +6,10 @@ class Machine:
 
     def __init__(self):
         self.__reset()
+        self.registers = [0]*8
         self.memory = [0]*Machine.MEM_SIZE
         self.dispatch = [None]*22
+        self.dispatch[ 9] = self.__add
         self.dispatch[19] = self.__out
         self.dispatch[21] = self.__noop
 
@@ -25,24 +27,38 @@ class Machine:
             self.pc += instr()
 
     def __reset(self):
-        self.registers = [0]*8
         self.stack = []
         self.pc = 0
         self.term_out = ""
 
+    def __add(self):
+        b = self.__get_arg(2)
+        c = self.__get_arg(3)
+        av = (b+c)%Machine.MODULO
+        self.__store_arg(1, av)
+        return 4
+        
+
     def __out(self):
-        ch = self.__literal_or_reg(1)
+        ch = self.__get_arg(1)
         self.term_out += chr(ch)
         return 2
 
     def __noop(self):
         return 1
 
-    def __literal_or_reg(self, offset):
+    def __get_arg(self, offset):
         arg = self.memory[self.pc + offset]
         if arg < 32768:
             return arg
         elif arg < 32776:
             return self.registers[arg - 32768]
+        else:
+            raise Exception(f"Invalid argument {arg}")
+
+    def __store_arg(self, offset, value):
+        arg = self.memory[self.pc + offset]
+        if (32768 <= arg) and (arg < 32776):
+            self.registers[arg - 32768] = value
         else:
             raise Exception(f"Invalid argument {arg}")

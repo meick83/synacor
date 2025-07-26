@@ -3,6 +3,13 @@ from machine import *
 
 class InstructionTest(unittest.TestCase):
 
+    def test_add(self):
+        m = Machine()
+        m.load([9,32768,8,4,0])
+        m.run()
+        self.assertEqual(m.pc, 4)
+        self.assertEqual(m.registers[0], 12)
+
     def test_halt(self):
         m = Machine()
         m.load([0])

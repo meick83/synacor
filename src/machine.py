@@ -1,22 +1,96 @@
 
+from dataclasses import dataclass
+import functools
+import itertools
+
+class InstructionDecoder:
+
+    class Instr:
+        def __init__(self, dispatch, *args):
+            self.dispatch = dispatch
+            self.args = args
+
+    def __init__(self, dispatch_obj):
+        self.dispatch_obj = dispatch_obj
+        self.instr = [None]*22
+        self.instr[ 0] = self.Instr(dispatch_obj.instr_exit)
+        self.instr[ 1] = self.Instr(dispatch_obj.instr_set, self.__O, self.__I)
+        self.instr[ 4] = self.Instr(dispatch_obj.instr_eq , self.__O, self.__I, self.__I)
+        self.instr[ 6] = self.Instr(dispatch_obj.instr_jmp, self.__I)
+        self.instr[ 7] = self.Instr(dispatch_obj.instr_jt , self.__I, self.__I)
+        self.instr[ 8] = self.Instr(dispatch_obj.instr_jf , self.__I, self.__I)
+        self.instr[ 9] = self.Instr(dispatch_obj.instr_add, self.__O, self.__I, self.__I)
+        self.instr[19] = self.Instr(dispatch_obj.instr_out, self.__I)
+        self.instr[21] = self.Instr(dispatch_obj.instr_noop)
+
+    def decode(self, mem, pos):
+        opcode = mem[pos]
+        instr = self.instr[opcode]
+        if instr is None:
+            raise Exception(f"unknonwn opcode {opcode}")
+        args = tuple(
+            map(
+                lambda f, v: f(v),
+                instr.args,
+                mem[pos+1:]
+            )
+        )
+
+        return instr.dispatch, pos+len(args)+1, args
+
+    def __O(self, arg):
+        if (32768 <= arg) and (arg < 32776):
+            return self.__get_register(arg - 32768)
+        else:
+            raise Exception(f"Invalid argument {arg}")
+
+    def __I(self, arg):
+        if arg < 32768:
+            return self.__get_literal(arg)
+        elif arg < 32776:
+            return self.__get_register(arg - 32768)
+        else:
+            raise Exception(f"Invalid argument {arg}")
+
+    @functools.cache
+    def __get_literal(self, v):
+        return self.dispatch_obj.get_literal(v)
+
+    @functools.cache
+    def __get_register(self, ix):
+        return self.dispatch_obj.get_register(ix)
+
+
+
 class Machine:
 
     MEM_SIZE = 2**15
     MODULO = 32768
 
+    class Register:
+        def __init__(self, ix):
+            self.__ix = ix
+            self.__value = 0
+        def set(self, v):
+            self.__value = v
+        def get(self):
+            return self.__value
+
+    class Literal:
+        def __init__(self, v):
+            self.__value = v
+        def get(self):
+            return self.__value
+
+
     def __init__(self):
         self.__reset()
-        self.registers = [0]*8
+        self.registers = list(map(self.Register,range(8)))
         self.memory = [0]*Machine.MEM_SIZE
-        self.dispatch = [None]*22
-        self.dispatch[ 1] = self.__set
-        self.dispatch[ 4] = self.__eq
-        self.dispatch[ 6] = self.__jmp
-        self.dispatch[ 7] = self.__jt
-        self.dispatch[ 8] = self.__jf
-        self.dispatch[ 9] = self.__add
-        self.dispatch[19] = self.__out
-        self.dispatch[21] = self.__noop
+        self.instr_exit = None
+        self.get_literal = Machine.Literal
+        self.get_register = self.registers.__getitem__
+        self.decoder = InstructionDecoder(self)
 
     def load(self, data):
         lend = len(data)
@@ -25,82 +99,45 @@ class Machine:
     def run(self):
         self.__reset()
         while True:
-            opcode = self.memory[self.pc]
-            if opcode == 0:
+            dispatch, self.next_pc, args = self.decoder.decode(self.memory, self.pc)
+            if dispatch is None:
                 return
-            instr = self.dispatch[opcode]
-            if instr is None:
-                raise Exception(f"unknown opcode {opcode}")
-            self.pc += instr()
+            dispatch(*args)
+            self.pc = self.next_pc
 
     def __reset(self):
         self.stack = []
         self.pc = 0
         self.term_out = ""
 
-    def __set(self):
-        b = self.__get_arg(2)
-        self.__store_arg(1, b)
-        return 3
+    def instr_set(self, a, b):
+        a.set(b.get())
 
-    def __eq(self):
-        b = self.__get_arg(2)
-        c = self.__get_arg(3)
-        if b == c:
-            self.__store_arg(1, 1)
+    def instr_eq(self, a, b, c):
+        if b.get() == c.get():
+            a.set(1)
         else:
-            self.__store_arg(1, 0)
-        return 4
+            a.set(0)
 
-    def __jmp(self):
-        a = self.__get_arg(1)
-        return (a - self.pc)
+    def instr_jmp(self, a):
+        self.next_pc = a.get()
 
-    def __jt(self):
-        a = self.__get_arg(1)
-        b = self.__get_arg(2)
-        if a != 0:
-            return (b - self.pc)
-        else:
-            return 3
+    def instr_jt(self, a, b):
+        if a.get() != 0:
+            self.next_pc = b.get()
 
-    def __jf(self):
-        a = self.__get_arg(1)
-        b = self.__get_arg(2)
-        if a == 0:
-            return (b - self.pc)
-        else:
-            return 3
+    def instr_jf(self, a, b):
+        if a.get() == 0:
+            self.next_pc = b.get()
 
 
-    def __add(self):
-        b = self.__get_arg(2)
-        c = self.__get_arg(3)
-        av = (b+c)%Machine.MODULO
-        self.__store_arg(1, av)
-        return 4
+    def instr_add(self, a, b, c):
+        av = (b.get()+c.get())%Machine.MODULO
+        a.set(av)
         
 
-    def __out(self):
-        ch = self.__get_arg(1)
-        self.term_out += chr(ch)
-        return 2
+    def instr_out(self, a):
+        self.term_out += chr(a.get())
 
-    def __noop(self):
-        return 1
-
-    def __get_arg(self, offset):
-        arg = self.memory[self.pc + offset]
-        if arg < 32768:
-            return arg
-        elif arg < 32776:
-            return self.registers[arg - 32768]
-        else:
-            raise Exception(f"Invalid argument {arg}")
-
-    def __store_arg(self, offset, value):
-        arg = self.memory[self.pc + offset]
-        if (32768 <= arg) and (arg < 32776):
-            self.registers[arg - 32768] = value
-        else:
-            raise Exception(f"Invalid argument {arg}")
+    def instr_noop(self):
+        pass

@@ -28,7 +28,12 @@ class InstructionDecoder:
         self.instr[12] = self.Instr(dispatch_obj.instr_and,  self.__O, self.__I, self.__I)
         self.instr[13] = self.Instr(dispatch_obj.instr_or,   self.__O, self.__I, self.__I)
         self.instr[14] = self.Instr(dispatch_obj.instr_not,  self.__O, self.__I)
+        self.instr[15] = self.Instr(dispatch_obj.instr_rmem, self.__O, self.__I)
+        self.instr[16] = self.Instr(dispatch_obj.instr_wmem, self.__I, self.__I)
+        self.instr[17] = self.Instr(dispatch_obj.instr_call, self.__I)
+        self.instr[18] = self.Instr(dispatch_obj.instr_ret)
         self.instr[19] = self.Instr(dispatch_obj.instr_out,  self.__I)
+        self.instr[20] = self.Instr(dispatch_obj.instr_in,   self.__O)
         self.instr[21] = self.Instr(dispatch_obj.instr_noop)
 
     def decode(self, mem, pos):
@@ -97,6 +102,7 @@ class Machine:
         self.stack = []
         self.pc = 0
         self.term_out = ""
+        self.term_in = ""
 
         self.instr_exit = None
         self.get_literal = Machine.Literal
@@ -147,7 +153,6 @@ class Machine:
         if a.get() == 0:
             self.next_pc = b.get()
 
-
     def instr_add(self, a, b, c):
         av = (b.get()+c.get())%Machine.MODULO
         a.set(av)
@@ -171,10 +176,26 @@ class Machine:
     def instr_not(self, a, b):
         av = ~b.get()&0x7FFF
         a.set(av)
-        
+
+    def instr_rmem(self, a, b):
+        a.set(self.memory[b.get()])
+
+    def instr_wmem(self, a, b):
+        self.memory[a.get()] = b.get()
+
+    def instr_call(self, a):
+        self.stack.append(self.next_pc)
+        self.next_pc = a.get()
+
+    def instr_ret(self):
+        self.next_pc = self.stack.pop()
 
     def instr_out(self, a):
         self.term_out += chr(a.get())
+
+    def instr_in(self, a):
+        a.set(ord(self.term_in[0]))
+        self.term_in = self.term_in[1:]
 
     def instr_noop(self):
         pass

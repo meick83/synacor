@@ -3,6 +3,12 @@ from machine import *
 
 class InstructionTest(unittest.TestCase):
 
+    def test_halt(self):
+        m = Machine()
+        m.load([0])
+        m.run()
+        self.assertEqual(m.pc, 0)
+
     def test_set(self):
         m = Machine()
         m.load([1, 32768, 1234])
@@ -118,17 +124,35 @@ class InstructionTest(unittest.TestCase):
         self.assertEqual(m.pc, 3)
         self.assertEqual(m.registers[0].get(), 0x7FFE)
 
-    def test_halt(self):
+    def test_rmem(self):
         m = Machine()
-        m.load([0])
+        m.load([15,32768,1234,0])
+        m.memory[1234] = 5678
         m.run()
-        self.assertEqual(m.pc, 0)
+        self.assertEqual(m.pc, 3)
+        self.assertEqual(m.registers[0].get(), 5678)
 
-    def test_noop(self):
+    def test_wmem(self):
         m = Machine()
-        m.load([21,0])
+        m.load([16,1234,5678,0])
         m.run()
-        self.assertEqual(m.pc, 1)
+        self.assertEqual(m.pc, 3)
+        self.assertEqual(m.memory[1234], 5678)
+
+    def test_call(self):
+        m = Machine()
+        m.load([17,1234])
+        m.run()
+        self.assertEqual(m.pc, 1234)
+        self.assertListEqual(m.stack, [2])
+
+    def test_ret(self):
+        m = Machine()
+        m.load([18])
+        m.stack = [1234]
+        m.run()
+        self.assertEqual(m.pc, 1234)
+        self.assertListEqual(m.stack, [])
 
     def test_out(self):
         m = Machine()
@@ -136,6 +160,21 @@ class InstructionTest(unittest.TestCase):
         m.run()
         self.assertEqual(m.pc, 2)
         self.assertEqual(m.term_out,"$")
+
+    def test_in(self):
+        m = Machine()
+        m.load([20,32768,0])
+        m.term_in="$"
+        m.run()
+        self.assertEqual(m.pc, 2)
+        self.assertEqual(m.registers[0].get(),ord("$"))
+        self.assertEqual(m.term_in,"")
+
+    def test_noop(self):
+        m = Machine()
+        m.load([21,0])
+        m.run()
+        self.assertEqual(m.pc, 1)
 
 if __name__ == '__main__':
     unittest.main()

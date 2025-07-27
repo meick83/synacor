@@ -194,6 +194,10 @@ class Machine:
         self.term_out += chr(a.get())
 
     def instr_in(self, a):
+        if len(self.term_in) == 0:
+            print(self.term_out)
+            self.term_in = input()+"\n"
+            self.term_out = ""
         a.set(ord(self.term_in[0]))
         self.term_in = self.term_in[1:]
 

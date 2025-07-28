@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import functools
 import itertools
+import re
 
 class InstructionDecoder:
 
@@ -89,6 +90,9 @@ class Machine:
         def get(self):
             return self.__value
 
+        def get_state(self):
+            return {"value" : self.__value}
+
     class Literal:
         def __init__(self, v):
             self.__value = v
@@ -99,12 +103,17 @@ class Machine:
     def __init__(self):
         self.registers = list(map(self.Register,range(8)))
         self.memory = [0]*Machine.MEM_SIZE
+        self.mem_low = Machine.MEM_SIZE
+        self.mem_high = 0
         self.stack = []
         self.pc = 0
         self.term_out = ""
         self.term_in = ""
 
-        self.instr_exit = None
+        self.term_break : re.Pattern = None
+
+        self.__running = False
+
         self.get_literal = Machine.Literal
         self.get_register = self.registers.__getitem__
         self.decoder = InstructionDecoder(self)
@@ -113,13 +122,30 @@ class Machine:
         lend = len(data)
         self.memory[0:lend] = data[:]
 
+    def get_state(self):
+        state = {
+            "registers" : list(map(self.Register.get_state, self.registers)),
+            "pc" : self.pc,
+            "stack" : self.stack,
+            "mem_low" : self.mem_low,
+            "mem_high" : self.mem_high,
+            "memory" : self.memory[self.mem_low:self.mem_high+1],
+            "term_out" : self.term_out
+        }
+        return state
+
+    def set_term_break(self, regex : str):
+        self.term_break = re.compile(regex)
+
     def run(self):
-        while True:
+        self.__running = True
+        while self.__running:
             dispatch, self.next_pc, args = self.decoder.decode(self.memory, self.pc)
-            if dispatch is None:
-                return
             dispatch(*args)
             self.pc = self.next_pc
+
+    def instr_exit(self):
+        self.__running = False
 
     def instr_set(self, a, b):
         a.set(b.get())
@@ -181,7 +207,12 @@ class Machine:
         a.set(self.memory[b.get()])
 
     def instr_wmem(self, a, b):
-        self.memory[a.get()] = b.get()
+        addr = a.get()
+        self.memory[addr] = b.get()
+        if addr < self.mem_low:
+            self.mem_low = addr
+        if addr > self.mem_high:
+            self.mem_high = addr
 
     def instr_call(self, a):
         self.stack.append(self.next_pc)
@@ -191,7 +222,13 @@ class Machine:
         self.next_pc = self.stack.pop()
 
     def instr_out(self, a):
-        self.term_out += chr(a.get())
+        ch = chr(a.get())
+        self.term_out += ch
+        if self.term_break is None:
+            return
+        m = self.term_break.search(self.term_out)
+        if m:
+            self.__running = False
 
     def instr_in(self, a):
         if len(self.term_in) == 0:

@@ -1,0 +1,34 @@
+{
+  "registers": [
+    {
+      "value": 0
+    },
+    {
+      "value": 0
+    },
+    {
+      "value": 0
+    },
+    {
+      "value": 0
+    },
+    {
+      "value": 0
+    },
+    {
+      "value": 0
+    },
+    {
+      "value": 0
+    },
+    {
+      "value": 0
+    }
+  ],
+  "pc": 270,
+  "stack": [],
+  "mem_low": 32768,
+  "mem_high": 0,
+  "memory": [],
+  "term_out": "Welcome to the Synacor Challenge!\nPlease record your progress by putting codes like\nthis one into the challenge website: iHYjwZoBmJKP\n"
+}

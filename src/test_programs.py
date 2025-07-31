@@ -14,16 +14,25 @@ class ProgramTest(unittest.TestCase):
         return None
 
     def __assertOrSaveState(self, m, name : str):
-        path = "states" / pathlib.Path(name+".json")
-        if path.exists():
-            with open(path) as f:
-                current_state = m.get_state()
-                expected_state = json.load(f)
-                self.assertDictEqual(current_state, expected_state)
+        expected_state = self.__load_state(name)
+        if expected_state is not None:
+            current_state = m.get_state()
+            self.assertDictEqual(current_state, expected_state)
         else:
+            path = self.__get_state_path(name)
             with open(path, "w") as f:
                 state = m.get_state()
                 json.dump(state, f, indent=2)
+
+    def __load_state(self, name):
+        path = self.__get_state_path(name)
+        if not path.exists():
+            return None
+        with open(path) as f:
+            return json.load(f)
+
+    def __get_state_path(self, name):
+        return "states" / pathlib.Path(name+".json")
 
     def test_ex1(self):
         m = Machine()
@@ -39,6 +48,15 @@ class ProgramTest(unittest.TestCase):
         m.set_term_break(r"website:.*")
         m.run()
         self.__assertOrSaveState(m, "after_init")
+        print("\n".join(m.term_out))
+
+    def test_selftest(self):
+        m = Machine()
+        m.load(self.__load_from_file())
+        m.load_state(self.__load_state("after_init"))
+        m.set_term_break(r"The self-test completion code is")
+        m.run()
+        self.__assertOrSaveState(m, "after_selftest")
         print("\n".join(m.term_out))
         
 

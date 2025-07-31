@@ -93,6 +93,9 @@ class Machine:
         def get_state(self):
             return {"value" : self.__value}
 
+        def load_state(self, src):
+            self.__value = src["value"]
+
     class Literal:
         def __init__(self, v):
             self.__value = v

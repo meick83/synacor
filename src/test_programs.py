@@ -58,6 +58,17 @@ class ProgramTest(unittest.TestCase):
         m.run()
         self.__assertOrSaveState(m, "after_selftest")
         print("\n".join(m.term_out))
+
+    def test_take_tablet(self):
+        m = Machine()
+        m.load(self.__load_from_file())
+        m.load_state(self.__load_state("after_selftest"))
+        m.term_in = ["take tablet", "use tablet"]
+        m.set_term_break("You find yourself writing .* on the tablet.")
+        m.run()
+        self.__assertOrSaveState(m, "after_tablet_use")
+        print("\n".join(m.term_out))
+
         
 
 if __name__ == '__main__':

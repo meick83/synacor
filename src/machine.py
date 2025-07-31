@@ -274,12 +274,16 @@ class Machine:
             self.term_in.append(input())
             self.term_out = [""]
         first_line = self.term_in[0]
-        a.set(ord(first_line[0]))
-        first_line = first_line[1:]
         if first_line == "":
+            a.set(ord("\n"))
             del self.term_in[0]
+            self.term_out.append("") # echo
         else:
+            ch = first_line[0]
+            a.set(ord(ch))
+            first_line = first_line[1:]
             self.term_in[0] = first_line
+            self.term_out[-1] += ch # echo
 
     def instr_noop(self):
         pass

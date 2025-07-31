@@ -112,6 +112,8 @@ class Machine:
         self.pc = 0
         self.term_out = [""]
         self.term_in = []
+        self.instruction_cache = {}
+        self.instruction_cache_limit = 0
 
         self.term_break : re.Pattern = None
 
@@ -156,9 +158,19 @@ class Machine:
     def run(self):
         self.__running = True
         while self.__running:
-            dispatch, self.next_pc, args = self.decoder.decode(self.memory, self.pc)
+            dispatch, self.next_pc, args = self.__decode_next()
             dispatch(*args)
             self.pc = self.next_pc
+
+    def __decode_next(self):
+        cached = self.instruction_cache.get(self.pc)
+        if cached is not None:
+            return cached
+        dispatch, next_pc, args = self.decoder.decode(self.memory, self.pc)
+        self.instruction_cache[self.pc] = (dispatch, next_pc, args)
+        if next_pc > self.instruction_cache_limit:
+            self.instruction_cache_limit = next_pc
+        return dispatch, next_pc, args
 
     def instr_exit(self):
         self.__running = False
@@ -229,6 +241,11 @@ class Machine:
             self.mem_low = addr
         if addr > self.mem_high:
             self.mem_high = addr
+        if addr < self.instruction_cache_limit:
+            for i in range(0,4):
+                if addr - i in self.instruction_cache:
+                    del self.instruction_cache[addr - i]
+                    break
 
     def instr_call(self, a):
         self.stack.append(self.next_pc)

@@ -164,7 +164,7 @@ class InstructionTest(unittest.TestCase):
     def test_in(self):
         m = Machine()
         m.load([20,32768,0])
-        m.term_in[0]="$"
+        m.term_in=["$"]
         m.run()
         self.assertEqual(m.pc, 3)
         self.assertEqual(m.registers[0].get(),ord("$"))

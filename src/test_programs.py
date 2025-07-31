@@ -30,16 +30,16 @@ class ProgramTest(unittest.TestCase):
         m.load([9,32768,32769,4,19,32768])
         m.registers[1].set(ord("a"))
         m.run()
-        self.assertEqual(m.pc, 6)
-        self.assertEqual(m.term_out, "e")
+        self.assertEqual(m.pc, 7)
+        self.assertListEqual(m.term_out, ["e"])
 
     def test_init(self):
         m = Machine()
         m.load(self.__load_from_file())
-        m.set_term_break(r"website:.*\n")
+        m.set_term_break(r"website:.*")
         m.run()
         self.__assertOrSaveState(m, "after_init")
-        print(m.term_out)
+        print("\n".join(m.term_out))
         
 
 if __name__ == '__main__':

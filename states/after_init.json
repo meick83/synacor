@@ -30,5 +30,10 @@
   "mem_low": 32768,
   "mem_high": 0,
   "memory": [],
-  "term_out": "Welcome to the Synacor Challenge!\nPlease record your progress by putting codes like\nthis one into the challenge website: iHYjwZoBmJKP\n"
+  "term_out": [
+    "Welcome to the Synacor Challenge!",
+    "Please record your progress by putting codes like",
+    "this one into the challenge website: iHYjwZoBmJKP",
+    ""
+  ]
 }

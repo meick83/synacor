@@ -7,20 +7,20 @@ class InstructionTest(unittest.TestCase):
         m = Machine()
         m.load([0])
         m.run()
-        self.assertEqual(m.pc, 0)
+        self.assertEqual(m.pc, 1)
 
     def test_set(self):
         m = Machine()
         m.load([1, 32768, 1234])
         m.run()
-        self.assertEqual(m.pc, 3)
+        self.assertEqual(m.pc, 4)
         self.assertEqual(m.registers[0].get(), 1234)
 
     def test_push(self):
         m = Machine()
         m.load([2, 1234])
         m.run()
-        self.assertEqual(m.pc, 2)
+        self.assertEqual(m.pc, 3)
         self.assertListEqual(m.stack,[1234])
 
     def test_pop(self):
@@ -28,7 +28,7 @@ class InstructionTest(unittest.TestCase):
         m.load([3, 32768])
         m.stack = [1234]
         m.run()
-        self.assertEqual(m.pc, 2)
+        self.assertEqual(m.pc, 3)
         self.assertListEqual(m.stack,[])
         self.assertEqual(m.registers[0].get(), 1234)
 
@@ -36,92 +36,92 @@ class InstructionTest(unittest.TestCase):
         m = Machine()
         m.load([4,32768,1,1])
         m.run()
-        self.assertEqual(m.pc, 4)
+        self.assertEqual(m.pc, 5)
         self.assertEqual(m.registers[0].get(), 1)
         m = Machine()
         m.load([4,32768,1,0])
         m.run()
-        self.assertEqual(m.pc, 4)
+        self.assertEqual(m.pc, 5)
         self.assertEqual(m.registers[0].get(), 0)
 
     def test_gt(self):
         m = Machine()
         m.load([5,32768,1,0])
         m.run()
-        self.assertEqual(m.pc, 4)
+        self.assertEqual(m.pc, 5)
         self.assertEqual(m.registers[0].get(), 1)
         m = Machine()
         m.load([5,32768,1,2])
         m.run()
-        self.assertEqual(m.pc, 4)
+        self.assertEqual(m.pc, 5)
         self.assertEqual(m.registers[0].get(), 0)
 
     def test_jmp(self):
         m = Machine()
         m.load([6,10])
         m.run()
-        self.assertEqual(m.pc, 10)
+        self.assertEqual(m.pc, 11)
 
     def test_jt(self):
         m = Machine()
         m.load([7,0,10])
         m.run()
-        self.assertEqual(m.pc, 3)
+        self.assertEqual(m.pc, 4)
         m = Machine()
         m.load([7,1,10])
         m.run()
-        self.assertEqual(m.pc, 10)
+        self.assertEqual(m.pc, 11)
 
     def test_jf(self):
         m = Machine()
         m.load([8,1,10])
         m.run()
-        self.assertEqual(m.pc, 3)
+        self.assertEqual(m.pc, 4)
         m = Machine()
         m.load([8,0,10])
         m.run()
-        self.assertEqual(m.pc, 10)
+        self.assertEqual(m.pc, 11)
 
     def test_add(self):
         m = Machine()
         m.load([9,32768,8,4,0])
         m.run()
-        self.assertEqual(m.pc, 4)
+        self.assertEqual(m.pc, 5)
         self.assertEqual(m.registers[0].get(), 12)
 
     def test_mult(self):
         m = Machine()
         m.load([10,32768,3,4,0])
         m.run()
-        self.assertEqual(m.pc, 4)
+        self.assertEqual(m.pc, 5)
         self.assertEqual(m.registers[0].get(), 12)
 
     def test_mod(self):
         m = Machine()
         m.load([11,32768,4,3,0])
         m.run()
-        self.assertEqual(m.pc, 4)
+        self.assertEqual(m.pc, 5)
         self.assertEqual(m.registers[0].get(), 1)
 
     def test_and(self):
         m = Machine()
         m.load([12,32768,4,7,0])
         m.run()
-        self.assertEqual(m.pc, 4)
+        self.assertEqual(m.pc, 5)
         self.assertEqual(m.registers[0].get(), 4)
 
     def test_or(self):
         m = Machine()
         m.load([13,32768,4,3,0])
         m.run()
-        self.assertEqual(m.pc, 4)
+        self.assertEqual(m.pc, 5)
         self.assertEqual(m.registers[0].get(), 7)
 
     def test_not(self):
         m = Machine()
         m.load([14,32768,1,0])
         m.run()
-        self.assertEqual(m.pc, 3)
+        self.assertEqual(m.pc, 4)
         self.assertEqual(m.registers[0].get(), 0x7FFE)
 
     def test_rmem(self):
@@ -129,21 +129,21 @@ class InstructionTest(unittest.TestCase):
         m.load([15,32768,1234,0])
         m.memory[1234] = 5678
         m.run()
-        self.assertEqual(m.pc, 3)
+        self.assertEqual(m.pc, 4)
         self.assertEqual(m.registers[0].get(), 5678)
 
     def test_wmem(self):
         m = Machine()
         m.load([16,1234,5678,0])
         m.run()
-        self.assertEqual(m.pc, 3)
+        self.assertEqual(m.pc, 4)
         self.assertEqual(m.memory[1234], 5678)
 
     def test_call(self):
         m = Machine()
         m.load([17,1234])
         m.run()
-        self.assertEqual(m.pc, 1234)
+        self.assertEqual(m.pc, 1235)
         self.assertListEqual(m.stack, [2])
 
     def test_ret(self):
@@ -151,30 +151,30 @@ class InstructionTest(unittest.TestCase):
         m.load([18])
         m.stack = [1234]
         m.run()
-        self.assertEqual(m.pc, 1234)
+        self.assertEqual(m.pc, 1235)
         self.assertListEqual(m.stack, [])
 
     def test_out(self):
         m = Machine()
         m.load([19,ord("$"),0])
         m.run()
-        self.assertEqual(m.pc, 2)
-        self.assertEqual(m.term_out,"$")
+        self.assertEqual(m.pc, 3)
+        self.assertEqual(m.term_out[0],"$")
 
     def test_in(self):
         m = Machine()
         m.load([20,32768,0])
-        m.term_in="$"
+        m.term_in[0]="$"
         m.run()
-        self.assertEqual(m.pc, 2)
+        self.assertEqual(m.pc, 3)
         self.assertEqual(m.registers[0].get(),ord("$"))
-        self.assertEqual(m.term_in,"")
+        self.assertListEqual(m.term_in,[])
 
     def test_noop(self):
         m = Machine()
         m.load([21,0])
         m.run()
-        self.assertEqual(m.pc, 1)
+        self.assertEqual(m.pc, 2)
 
 if __name__ == '__main__':
     unittest.main()

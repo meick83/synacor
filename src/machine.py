@@ -107,8 +107,8 @@ class Machine:
         self.mem_high = 0
         self.stack = []
         self.pc = 0
-        self.term_out = ""
-        self.term_in = ""
+        self.term_out = [""]
+        self.term_in = []
 
         self.term_break : re.Pattern = None
 
@@ -133,6 +133,19 @@ class Machine:
             "term_out" : self.term_out
         }
         return state
+
+    def load_state(self, state):
+        for r,rs in zip(self.registers, state["registers"]):
+            r.load_state(rs)
+        self.pc = state["pc"]
+        self.stack = state["stack"]
+        smem_low = state["mem_low"]
+        smem_high = state["mem_high"]
+        if smem_low <= smem_high:
+            smem = state["memory"]
+            if len(smem)!=(smem_high - smem_low + 1):
+                raise Exception("memory has invalid size")
+            self.memory[smem_low:smem_high+1] = smem
 
     def set_term_break(self, regex : str):
         self.term_break = re.compile(regex)
@@ -223,20 +236,30 @@ class Machine:
 
     def instr_out(self, a):
         ch = chr(a.get())
-        self.term_out += ch
+        if ch != '\n':
+            self.term_out[-1] += ch
+            return
+
+        self.term_out.append("")
+        
         if self.term_break is None:
             return
-        m = self.term_break.search(self.term_out)
+        m = self.term_break.search(self.term_out[-2])
         if m:
             self.__running = False
 
     def instr_in(self, a):
         if len(self.term_in) == 0:
-            print(self.term_out)
-            self.term_in = input()+"\n"
-            self.term_out = ""
-        a.set(ord(self.term_in[0]))
-        self.term_in = self.term_in[1:]
+            print("\n".join(self.term_out))
+            self.term_in.append(input())
+            self.term_out = [""]
+        first_line = self.term_in[0]
+        a.set(ord(first_line[0]))
+        first_line = first_line[1:]
+        if first_line == "":
+            del self.term_in[0]
+        else:
+            self.term_in[0] = first_line
 
     def instr_noop(self):
         pass

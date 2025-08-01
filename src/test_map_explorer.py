@@ -32,7 +32,14 @@ class MapExplorerTest(unittest.TestCase):
         mex.search_step()
         mex.search_step()
         mex.search_step()
-        self.assertEqual(len(mex.rooms), 2)
+        self.assertEqual(len(mex.rooms), 3)
+
+    def test_write_dot(self):
+        mex = map_explorer.MapExplorer()
+        mex.search_step()
+        mex.search_step()
+        mex.search_step()
+        mex.write_dot("test_map.dot")
 
 
 

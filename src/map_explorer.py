@@ -86,12 +86,25 @@ class MapExplorer:
     def already_visited(self):
         return (self.current_room in self.rooms)
 
-    
-    def __find_line(self, start_ix, regex):
-        for ix, line in enumerate(self.machine.term_out[start_ix:]):
-            m = regex.match(line)
-            if m is not None:
-                return start_ix + ix, m
-        return None
-
+    def write_dot(self, name):
+        with open(name, "w") as f:
+            node_names = {}
+            f.write("digraph {\n")
+            for room_num, room in enumerate(self.rooms):
+                node_name = f"r{room_num}"
+                node_names[room] = node_name
+                description = room.description[:]
+                if len(room.items) > 0:
+                    description.append("items: "+", ".join(room.items))
+                tooltip = "\\n".join(description)
+                tooltip = tooltip.replace('"',"'")
+                f.write(f'\t{node_name}[label="{room.name}", tooltip="{tooltip}"];\n')
+            for from_room in self.rooms:
+                for ex, to_room in from_room.exits.items():
+                    if to_room is None or to_room.name is None:
+                        continue
+                    from_node = node_names[from_room]
+                    to_node = node_names[to_room]
+                    f.write(f'\t{from_node} -> {to_node}[label="{ex}"];\n')
+            f.write("}\n")
     

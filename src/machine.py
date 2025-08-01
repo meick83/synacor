@@ -144,13 +144,13 @@ class Machine:
             r.load_state(rs)
         self.pc = state["pc"]
         self.stack = state["stack"]
-        smem_low = state["mem_low"]
-        smem_high = state["mem_high"]
-        if smem_low <= smem_high:
+        self.mem_low = state["mem_low"]
+        self.mem_high = state["mem_high"]
+        if self.mem_low <= self.mem_high:
             smem = state["memory"]
-            if len(smem)!=(smem_high - smem_low + 1):
+            if len(smem)!=(self.mem_high - self.mem_low + 1):
                 raise Exception("memory has invalid size")
-            self.memory[smem_low:smem_high+1] = smem
+            self.memory[self.mem_low:self.mem_high+1] = smem
 
     def set_term_break(self, regex : str):
         self.term_break = re.compile(regex)

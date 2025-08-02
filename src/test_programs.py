@@ -11,10 +11,8 @@ class ProgramTest(unittest.TestCase):
             current_state = m.get_state()
             self.assertDictEqual(current_state, expected_state)
         else:
-            path = self.__get_state_path(name)
-            with open(path, "w") as f:
-                state = m.get_state()
-                file_io.save_state(state, name)
+            state = m.get_state()
+            file_io.save_state(state, name)
                 
 
     def test_ex1(self):
@@ -46,8 +44,11 @@ class ProgramTest(unittest.TestCase):
         m = Machine()
         m.load(file_io.load_from_file())
         m.load_state(file_io.load_state("after_selftest"))
-        m.term_in = ["take tablet", "use tablet"]
-        m.set_term_break("You find yourself writing .* on the tablet.")
+        m.set_term_break("What do you do?")
+        m.run()
+        m.term_in = ["take tablet"]
+        m.run()
+        m.term_in = ["use tablet"]
         m.run()
         self.__assertOrSaveState(m, "after_tablet_use")
         print("\n".join(m.term_out))

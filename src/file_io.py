@@ -17,7 +17,9 @@ def load_state(name):
         return json.load(f)
 
 def save_state(state, name):
-    json.dump(state, f, indent=2)
+    path = __get_state_path(name)
+    with open(path,"w") as f:
+        json.dump(state, f, indent=2)
 
 def __get_state_path(name):
     return "states" / pathlib.Path(name+".json")

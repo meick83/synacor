@@ -1,6 +1,7 @@
 import machine
 import file_io
 import re
+import subprocess
 from dataclasses import dataclass, field
 
 @dataclass
@@ -23,12 +24,12 @@ class Room:
 
 class MapExplorer:
 
-    def __init__(self):
+    def __init__(self, init_state):
         self.machine = machine.Machine()
         self.machine.load(file_io.load_from_file())
         self.search_stack = []
         self.machine.set_term_break("What do you do?")
-        self.machine.load_state(file_io.load_state("after_selftest"))
+        self.machine.load_state(file_io.load_state(init_state))
         self.current_room = Room()
         self.prev_room = None
         self.current_exit = None
@@ -37,15 +38,21 @@ class MapExplorer:
 
         self.re_exits = re.compile(r"(There is 1 exit|There are \d+ exits)")
 
-    def explore(self, max_steps):
+    def explore(self, max_steps, item_to_find = None, *actions):
+        self.item_to_find = item_to_find
+        self.actions = actions
+        self.machine.term_in = ["look"]
         for i in range(0, max_steps):
             if not self.search_step():
                 break
 
     def search_step(self):
         self.search_room()
+        cont = True
         if not self.already_visited():
-            self.process_findings() 
+            cont = self.process_findings()
+        if not cont:
+            return False 
         return self.next_room()
 
     def search_room(self):
@@ -85,13 +92,18 @@ class MapExplorer:
     def process_findings(self):
         self.rooms.add(self.current_room)
         if self.current_room.name == "Fumbling around in the darkness":
-            return
+            return True
 
         for item in self.current_room.items:
-            self.take_item(item)
+            self.inspect_item(item)
+
+        if self.item_to_find in self.found_items:
+            return False
 
         for ex in self.current_room.exits:
             self.search_stack.append((self.current_room, ex))
+
+        return True
 
     def inspect_item(self, item):
         self.machine.term_out = [""]
@@ -107,6 +119,7 @@ class MapExplorer:
         self.machine.term_out = [""]
         self.machine.term_in = [f"use {item}"]
         self.machine.run()
+        self.found_items[item] = self.found_items.get(item,[]) + self.machine.term_out[3:-3]
 
 
     def next_room(self):
@@ -121,8 +134,8 @@ class MapExplorer:
     def already_visited(self):
         return (self.current_room in self.rooms)
 
-    def write_dot(self, name):
-        with open(name, "w") as f:
+    def write_map(self, name):
+        with open(f"{name}.dot", "w") as f:
             node_names = {}
             f.write("digraph {\n")
             for room_num, room in enumerate(self.rooms):
@@ -139,6 +152,7 @@ class MapExplorer:
                     to_node = node_names[to_room]
                     f.write(f'\t{from_node} -> {to_node}[label="{ex}"];\n')
             f.write("}\n")
+        subprocess.run(["dot", "-Tsvg", f"-o{name}.svg", f"{name}.dot"] )
     
     def write_item_list(self, name):
         with open(name, "w") as f:
@@ -146,6 +160,10 @@ class MapExplorer:
                 f.write(f"{item}\n")
                 description = "\n".join(description)
                 f.write(f"{description}\n\n")
+
+    def save_state(self, name):
+        state = self.machine.get_state()
+        file_io.save_state(state, name)
 
     def continue_interactive(self):
         self.machine.set_term_break(None)

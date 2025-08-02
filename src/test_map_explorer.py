@@ -46,12 +46,35 @@ class MapExplorerTest(unittest.TestCase):
         mex.explore(4)
         self.assertEqual(len(mex.search_stack), 1)
 
-    def test_explore(self):
-        mex = map_explorer.MapExplorer()
+    def test_initial_explore(self):
+        mex = map_explorer.MapExplorer("after_selftest")
         mex.explore(35)
-        mex.write_dot("the_map.dot")
-        mex.write_item_list("items.txt")
-        mex.continue_interactive()
+        mex.write_map("init_map")
+        mex.write_item_list("init_items.txt")
+
+    def test_explore_with_tablet(self):
+        mex = map_explorer.MapExplorer("after_tablet_use")
+        mex.explore(35, item_to_find="empty lantern")
+        mex.write_map("tablet_map")
+        mex.write_item_list("tablet_items.txt")
+        mex.take_item("empty lantern")
+        mex.save_state("after_lantern_taken")
+
+    def test_explore_with_empty_lantern(self):
+        mex = map_explorer.MapExplorer("after_lantern_taken")
+        mex.explore(35, item_to_find="can")
+        mex.take_item("can")
+        mex.use_item("can")
+        mex.use_item("lantern")
+        mex.write_map("lantern_map")
+        mex.write_item_list("lantern_items.txt")
+        mex.save_state("after_lantern_filled")
+
+    def test_explore_with_filled_lantern(self):
+        mex = map_explorer.MapExplorer("after_lantern_filled")
+        mex.explore(100)
+        mex.write_map("filled_lantern_map")
+        mex.write_item_list("filled_lantern_items.txt")
 
 
 

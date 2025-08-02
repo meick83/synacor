@@ -153,7 +153,10 @@ class Machine:
             self.memory[self.mem_low:self.mem_high+1] = smem
 
     def set_term_break(self, regex : str):
-        self.term_break = re.compile(regex)
+        if regex is not None:
+            self.term_break = re.compile(regex)
+        else:
+            self.term_break = None
 
     def run(self):
         self.__running = True

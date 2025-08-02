@@ -14,8 +14,11 @@ class Room:
 
     def __hash__(self):
         if self.__hash is None:
-            self.__hash = hash((self.name,)+tuple(self.description))
+            self.__hash = hash("\n".join(self.description))
         return self.__hash
+
+    def __eq__(self, othr):
+        return (self.description == othr.description)
 
 
 class MapExplorer:
@@ -27,61 +30,93 @@ class MapExplorer:
         self.machine.set_term_break("What do you do?")
         self.machine.load_state(file_io.load_state("after_selftest"))
         self.current_room = Room()
+        self.prev_room = None
+        self.current_exit = None
         self.rooms = set()
+        self.found_items = {}
 
-        self.reName = re.compile(r"== (.*) ==")
-        self.reEmpty = re.compile(r"^$")
+        self.re_exits = re.compile(r"(There is 1 exit|There are \d+ exits)")
+
+    def explore(self, max_steps):
+        for i in range(0, max_steps):
+            if not self.search_step():
+                break
 
     def search_step(self):
         self.search_room()
-        if self.already_visited():
-            return
-        self.process_findings()
-        self.next_room()
+        if not self.already_visited():
+            self.process_findings() 
+        return self.next_room()
 
     def search_room(self):
+        NONE = 0
+        ITEMS = 1
+        EXITS = 2
+
         self.machine.run()
+        self.current_room = Room()
         self.current_room.state = self.machine.get_state()
 
-        it = iter(self.machine.term_out)
-        for line in it:
-            if line.startswith("== "):
-                self.current_room.name = line[3:-3]
-                break
-
-        for line in it:
+        state = NONE
+        copy_line = False
+        for ix, line in enumerate(self.machine.term_out):
             if line == "":
-                break
-            self.current_room.description.append(line)
-
-        line = next(it)
-
-        if line == "Things of interest here:":
-            for line in it:
-                if line == "":
-                    line = next(it)
-                    break
+                state = NONE
+            elif (state == ITEMS) and (line[0] == "-"):
                 self.current_room.items.append(line[2:])
-
-        
-        if line.startswith("There are"):
-            for line in it:
-                if line == "":
-                    break
+            elif (state == EXITS) and (line[0] == "-"):
                 self.current_room.exits[line[2:]] = None
+            elif line.startswith("== "):
+                self.current_room.name = line[3:-3]
+                copy_line = True
+            elif line == "Things of interest here:":
+                state = ITEMS
+            elif self.re_exits.match(line):
+                state = EXITS
+            elif line == "What do you do?":
+                copy_line = False
+
+            if copy_line:
+                self.current_room.description.append(line)
+
+        if self.prev_room:
+            self.prev_room.exits[self.current_exit] = self.current_room  
         
     def process_findings(self):
         self.rooms.add(self.current_room)
+        if self.current_room.name == "Fumbling around in the darkness":
+            return
+
+        for item in self.current_room.items:
+            self.take_item(item)
+
         for ex in self.current_room.exits:
             self.search_stack.append((self.current_room, ex))
 
-    def next_room(self):
-        start_room, ex = self.search_stack.pop()
-        self.machine.load_state(start_room.state)
-        self.current_room = Room()
-        start_room.exits[ex] = self.current_room
-        self.machine.term_in = [f"go {ex}"]
+    def inspect_item(self, item):
         self.machine.term_out = [""]
+        self.machine.term_in = [f"look {item}"]
+        self.machine.run()
+        self.found_items[item] = self.machine.term_out[3:-3]
+
+    def take_item(self, item):
+        self.machine.term_in = [f"take {item}"]
+        self.machine.run()
+        
+    def use_item(self, item):
+        self.machine.term_out = [""]
+        self.machine.term_in = [f"use {item}"]
+        self.machine.run()
+
+
+    def next_room(self):
+        if len(self.search_stack) == 0:
+            return False
+        self.prev_room, self.current_exit = self.search_stack.pop()
+        self.machine.load_state(self.prev_room.state)
+        self.machine.term_in = [f"go {self.current_exit}"]
+        self.machine.term_out = [""]
+        return True
 
     def already_visited(self):
         return (self.current_room in self.rooms)
@@ -93,10 +128,7 @@ class MapExplorer:
             for room_num, room in enumerate(self.rooms):
                 node_name = f"r{room_num}"
                 node_names[room] = node_name
-                description = room.description[:]
-                if len(room.items) > 0:
-                    description.append("items: "+", ".join(room.items))
-                tooltip = "\\n".join(description)
+                tooltip = "\\n".join(room.description)
                 tooltip = tooltip.replace('"',"'")
                 f.write(f'\t{node_name}[label="{room.name}", tooltip="{tooltip}"];\n')
             for from_room in self.rooms:
@@ -108,3 +140,13 @@ class MapExplorer:
                     f.write(f'\t{from_node} -> {to_node}[label="{ex}"];\n')
             f.write("}\n")
     
+    def write_item_list(self, name):
+        with open(name, "w") as f:
+            for item, description in self.found_items.items():
+                f.write(f"{item}\n")
+                description = "\n".join(description)
+                f.write(f"{description}\n\n")
+
+    def continue_interactive(self):
+        self.machine.set_term_break(None)
+        self.machine.run()

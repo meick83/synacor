@@ -52,6 +52,15 @@ class ProgramTest(unittest.TestCase):
         self.__assertOrSaveState(m, "after_tablet_use")
         print("\n".join(m.term_out))
 
+    def test_help(self):
+        m = Machine()
+        m.load(file_io.load_from_file())
+        m.load_state(file_io.load_state("after_tablet_use"))
+        m.term_in = ["help"]
+       #  m.set_term_break("You may activate.*")
+        m.run()
+        print("\n".join(m.term_out))
+
         
 
 if __name__ == '__main__':

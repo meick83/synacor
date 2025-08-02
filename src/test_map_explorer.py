@@ -24,22 +24,34 @@ class MapExplorerTest(unittest.TestCase):
         mex.next_room()
         mex.search_room()
         self.assertEqual(mex.current_room.name, "Foothills") 
-        self.assertTrue(mex.current_room.description[0].startswith("As you begin to leave"))
+        self.assertTrue(mex.current_room.description[1].startswith("As you begin to leave"))
         self.assertFalse(mex.already_visited())
 
     def test_search_step(self):
         mex = map_explorer.MapExplorer()
-        mex.search_step()
-        mex.search_step()
-        mex.search_step()
-        self.assertEqual(len(mex.rooms), 3)
+        self.assertTrue(mex.search_step())
+        self.assertTrue(mex.search_step())
+        self.assertTrue(mex.search_step())
+        self.assertEqual(len(mex.rooms), 2)
 
     def test_write_dot(self):
         mex = map_explorer.MapExplorer()
-        mex.search_step()
-        mex.search_step()
-        mex.search_step()
+        self.assertTrue(mex.search_step())
+        self.assertTrue(mex.search_step())
+        self.assertTrue(mex.search_step())
         mex.write_dot("test_map.dot")
+
+    def test_loop_break(self):
+        mex = map_explorer.MapExplorer()
+        mex.explore(4)
+        self.assertEqual(len(mex.search_stack), 1)
+
+    def test_explore(self):
+        mex = map_explorer.MapExplorer()
+        mex.explore(35)
+        mex.write_dot("the_map.dot")
+        mex.write_item_list("items.txt")
+        mex.continue_interactive()
 
 
 

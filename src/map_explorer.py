@@ -138,7 +138,7 @@ class MapExplorer:
         return (self.current_room in self.rooms)
 
     def write_map(self, name):
-        with open(f"{name}.dot", "w") as f:
+        with open(f"resources/steps/{name}.dot", "w") as f:
             node_names = {}
             f.write("digraph {\n")
             for room_num, room in enumerate(self.rooms):
@@ -155,10 +155,10 @@ class MapExplorer:
                     to_node = node_names[to_room]
                     f.write(f'\t{from_node} -> {to_node}[label="{ex}"];\n')
             f.write("}\n")
-        subprocess.run(["dot", "-Tsvg", f"-o{name}.svg", f"{name}.dot"] )
+        subprocess.run(["dot", "-Tsvg", f"-oresources/steps/{name}.svg", f"resources/steps/{name}.dot"] )
     
     def write_item_list(self, name):
-        with open(name, "w") as f:
+        with open(f"resources/steps/{name}", "w") as f:
             for item, description in self.found_items.items():
                 f.write(f"{item}\n")
                 description = "\n".join(description)

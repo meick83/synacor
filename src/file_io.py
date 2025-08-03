@@ -22,4 +22,4 @@ def save_state(state, name):
         json.dump(state, f, indent=2)
 
 def __get_state_path(name):
-    return "states" / pathlib.Path(name+".json")
+    return "resources" / "states" / pathlib.Path(name+".json")

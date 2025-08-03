@@ -4,7 +4,7 @@ import json
 
 
 def load_from_file():
-    with open("challenge.bin", "rb") as f:
+    with open("resources/challenge.bin", "rb") as f:
         byte_program = f.read()
         return tuple(map(lambda x:x[0], struct.iter_unpack("<H", byte_program)))
     return None
@@ -22,4 +22,4 @@ def save_state(state, name):
         json.dump(state, f, indent=2)
 
 def __get_state_path(name):
-    return "resources" / "states" / pathlib.Path(name+".json")
+    return pathlib.Path("resources") / "states" / (name+".json")

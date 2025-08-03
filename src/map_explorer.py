@@ -86,6 +86,9 @@ class MapExplorer:
             if copy_line:
                 self.current_room.description.append(line)
 
+        if self.prev_room and self.prev_room == self.current_room:
+            self.current_room.description.append("Instance 2")
+
         if self.prev_room:
             self.prev_room.exits[self.current_exit] = self.current_room  
         

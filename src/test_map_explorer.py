@@ -72,9 +72,19 @@ class MapExplorerTest(unittest.TestCase):
 
     def test_explore_with_filled_lantern(self):
         mex = map_explorer.MapExplorer("after_lantern_filled")
-        mex.explore(100)
+        mex.explore(100, item_to_find="red coin")
+        mex.take_item("red coin")
+        mex.explore(10, item_to_find="blue coin")
+        mex.take_item("blue coin")
+        mex.explore(10, item_to_find="shiny coin")
+        mex.take_item("shiny coin")
+        mex.explore(10, item_to_find="concave coin")
+        mex.take_item("concave coin")
+        mex.explore(10, item_to_find="corroded coin")
+        mex.take_item("corroded coin")
         mex.write_map("filled_lantern_map")
         mex.write_item_list("filled_lantern_items.txt")
+        mex.save_state("after_coins_collected")
 
 
 

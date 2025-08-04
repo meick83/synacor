@@ -36,10 +36,14 @@ class MapExplorer:
         self.rooms = set()
         self.found_items = {}
 
+        self.item_to_find = None
+        self.description_to_find = None
+
         self.re_exits = re.compile(r"(There is 1 exit|There are \d+ exits)")
 
-    def explore(self, max_steps, item_to_find = None, *actions):
+    def explore(self, max_steps, item_to_find = None, description_to_find = None, *actions):
         self.item_to_find = item_to_find
+        self.description_to_find = description_to_find
         self.actions = actions
         self.machine.term_in = ["look"]
         for i in range(0, max_steps):
@@ -54,6 +58,18 @@ class MapExplorer:
         if not cont:
             return False 
         return self.next_room()
+
+    def go(self, *dirs):
+        if self.current_room is None:
+            self.machine.term_in = ["look"]
+            self.go_step()
+        for d in dirs:
+            self.go_next(d)
+            self.go_step()
+
+    def go_step(self):
+        self.search_room()
+        self.process_findings()
 
     def search_room(self):
         NONE = 0
@@ -103,6 +119,11 @@ class MapExplorer:
         if self.item_to_find in self.found_items:
             return False
 
+        if self.description_to_find is not None:
+            for line in self.current_room.description:
+                if self.description_to_find in line:
+                    return False
+
         for ex in self.current_room.exits:
             self.search_stack.append((self.current_room, ex))
 
@@ -115,6 +136,7 @@ class MapExplorer:
         self.found_items[item] = self.machine.term_out[3:-3]
 
     def take_item(self, item):
+        self.machine.term_out = [""]
         self.machine.term_in = [f"take {item}"]
         self.machine.run()
         
@@ -123,6 +145,12 @@ class MapExplorer:
         self.machine.term_in = [f"use {item}"]
         self.machine.run()
         self.found_items[item] = self.found_items.get(item,[]) + self.machine.term_out[3:-3]
+
+    def show_inventory(self):
+        self.machine.term_out = [""]
+        self.machine.term_in = ["inv"]
+        self.machine.run()
+        self.found_items["inv"] = self.found_items.get("inv",[]) + self.machine.term_out[:]
 
 
     def next_room(self):
@@ -133,6 +161,12 @@ class MapExplorer:
         self.machine.term_in = [f"go {self.current_exit}"]
         self.machine.term_out = [""]
         return True
+
+    def go_next(self, d):
+        self.prev_room = self.current_room
+        self.current_exit = d
+        self.machine.term_in = [f"go {d}"]
+        self.machine.term_out = [""]
 
     def already_visited(self):
         return (self.current_room in self.rooms)

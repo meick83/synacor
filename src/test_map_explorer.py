@@ -72,19 +72,44 @@ class MapExplorerTest(unittest.TestCase):
 
     def test_explore_with_filled_lantern(self):
         mex = map_explorer.MapExplorer("after_lantern_filled")
-        mex.explore(100, item_to_find="red coin")
-        mex.take_item("red coin")
-        mex.explore(10, item_to_find="blue coin")
-        mex.take_item("blue coin")
-        mex.explore(10, item_to_find="shiny coin")
-        mex.take_item("shiny coin")
-        mex.explore(10, item_to_find="concave coin")
-        mex.take_item("concave coin")
-        mex.explore(10, item_to_find="corroded coin")
-        mex.take_item("corroded coin")
+        mex.explore(100)
         mex.write_map("filled_lantern_map")
         mex.write_item_list("filled_lantern_items.txt")
-        mex.save_state("after_coins_collected")
+        # mex.save_state("after_coins_collected")
+
+    def test_find_red_coin(self):
+        mex = map_explorer.MapExplorer("after_lantern_filled")
+        mex.explore(100, item_to_find="red coin")
+        mex.save_state("red_coin_found")
+
+    def test_collect_coins(self):
+        mex = map_explorer.MapExplorer("red_coin_found")
+        mex.take_item("red coin")
+        mex.go("north", "west")
+        mex.take_item("blue coin")
+        mex.go("up")
+        mex.take_item("shiny coin")
+        mex.go("down","east", "east")
+        mex.take_item("concave coin")
+        mex.go("down")
+        mex.take_item("corroded coin")
+        mex.go("up", "west")
+        mex.show_inventory()
+        mex.write_item_list("coin_items.txt")
+        mex.write_map("coin_map")
+        mex.save_state("coins_collected")
+        
+    def test_solve_monument(self):
+        mex = map_explorer.MapExplorer("coins_collected")
+        mex.show_inventory()
+        mex.use_item("blue coin")
+        mex.use_item("red coin")
+        mex.use_item("shiny coin")
+        mex.use_item("concave coin")
+        mex.use_item("corroded coin")
+        mex.write_item_list("monument_items.txt")
+        return
+        
 
 
 
